@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
 import {
   Button,
   Checkbox,
@@ -13,15 +15,21 @@ import {
   ModalHeader,
   ModalOverlay,
   useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { actions } from "../../store/slice";
 
-const JoinMeetingModal = ({ children, isHost }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+const JoinMeetingModal = ({ children }) => {
+  const toast = useToast();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const isRoomHost = useSelector((state) => state.app.isRoomHost);
+
   const [meetingDetails, setMeetingDetails] = useState({
     name: "",
-    ...(!isHost && { meetingId: "" }),
+    ...(!isRoomHost && { meetingId: "" }),
+    joining: false,
   });
 
   const inputChangeHandler = (e) => {
@@ -31,8 +39,61 @@ const JoinMeetingModal = ({ children, isHost }) => {
   };
 
   const closeModalHandler = () => {
-    setMeetingDetails({ name: "", ...(!isHost && { meetingId: "" }) });
+    setMeetingDetails({ name: "", ...(!isRoomHost && { meetingId: "" }) });
     onClose();
+  };
+
+  const joinMeetingHandler = async () => {
+    setMeetingDetails((prev) => {
+      return {
+        ...prev,
+        joining: true,
+      };
+    });
+
+    if (!isRoomHost) {
+      await axios
+        .get(`/api/room/${meetingDetails.meetingId}`)
+        .then((res) => {
+          // console.log(res.data);
+          if (res.data.roomExists) {
+            if (res.data.roomIsFull) {
+              toast({
+                title: "Meeting is full!",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+                position: "top",
+              });
+            } else {
+              dispatch(actions.setIdentity({ identity: meetingDetails.name }));
+              dispatch(
+                actions.setMeetingId({ meetingId: meetingDetails.meetingId })
+              );
+              navigate(`/${meetingDetails.meetingId}`);
+            }
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+          toast({
+            title: err.response.data.message,
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+            position: "top",
+          });
+        });
+    } else {
+      // send new meeting req to backend and from the backend itself redirect the user to /meeting/:meetingId page
+    }
+
+    setMeetingDetails((prev) => {
+      return {
+        ...prev,
+        joining: false,
+      };
+    });
   };
 
   return (
@@ -42,11 +103,11 @@ const JoinMeetingModal = ({ children, isHost }) => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader textAlign={"center"}>
-            {isHost ? "Host" : "Join"} meeting
+            {isRoomHost ? "Host" : "Join"} meeting
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {!isHost && (
+            {!isRoomHost && (
               <>
                 <FormLabel>Meeting id :</FormLabel>
                 <Input
@@ -83,11 +144,9 @@ const JoinMeetingModal = ({ children, isHost }) => {
             <Button
               colorScheme="blue"
               mr={3}
-              onClick={() =>
-                dispatch(
-                  actions.setIsRoomHost({ isRoomHost: isHost ? true : false })
-                )
-              }
+              onClick={joinMeetingHandler}
+              isLoading={meetingDetails.joining}
+              loadingText="Joining..."
             >
               Join
             </Button>
@@ -95,6 +154,8 @@ const JoinMeetingModal = ({ children, isHost }) => {
               colorScheme="blue"
               variant={"ghost"}
               onClick={closeModalHandler}
+              isLoading={meetingDetails.joining}
+              loadingText=""
             >
               Cancel
             </Button>

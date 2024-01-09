@@ -1,7 +1,11 @@
+import { useDispatch } from "react-redux";
 import { Box, Button, Text } from "@chakra-ui/react";
 import JoinMeetingModal from "../components/modals/JoinMeetingModal";
+import { actions } from "../store/slice";
 
 const HomePage = () => {
+  const dispatch = useDispatch();
+
   return (
     <Box h={"100dvh"} display={"grid"} placeItems="center">
       <Box
@@ -22,18 +26,28 @@ const HomePage = () => {
           >
             Zoom Clone
           </Text>
-          <JoinMeetingModal isHost={false}>
-            <Button my={2.5} px={10} colorScheme={"blue"}>
+          <JoinMeetingModal>
+            <Button
+              my={2.5}
+              px={10}
+              colorScheme={"blue"}
+              onClick={() =>
+                dispatch(actions.setIsRoomHost({ isRoomHost: false }))
+              }
+            >
               Join a meeting
             </Button>
           </JoinMeetingModal>
-          <JoinMeetingModal isHost={true}>
+          <JoinMeetingModal>
             <Button
               my={1}
               px={9}
               border="2px"
               variant="outline"
               colorScheme={"blue"}
+              onClick={() =>
+                dispatch(actions.setIsRoomHost({ isRoomHost: true }))
+              }
             >
               Host a meeting
             </Button>
