@@ -1,12 +1,14 @@
 import express from "express";
 import { Server } from "socket.io";
 import { config } from "dotenv";
+import { v4 as uuid } from "uuid";
 import cors from "cors";
 
 import HttpError from "./models/HttpError.js";
 import { errorHandler, notFound } from "./middlewares/errorMiddlewares.js";
 
-const allRooms = [{ id: "abcd", users: ["abhi", "abhi", "abhi"] }];
+// { id: "abcd", users: ["abhi", "abhi", "abhi"] }
+let allRooms = [];
 
 config();
 const app = express();
@@ -35,16 +37,6 @@ app.get("/api/room/:roomId", (req, res, next) => {
   }
 });
 
-// app.post("/api/room", (req, res, next) => {
-//   try {
-//     const { userName } = req.body;
-
-//   } catch (error) {
-//     console.log(error);
-//     return next(new HttpError("Something went wrong.", 500));
-//   }
-// });
-
 app.use("/api", (req, res, next) => {
   res.status(200).json({ message: "API is running." });
 });
@@ -59,9 +51,87 @@ const server = app.listen(PORT || 8080, () => {
 
 const io = new Server(server, {
   pingTimeout: 120000,
-  cors: {
-    origin: process.env.FRONTEND_URL,
-  },
+  cors: true,
 });
+
+io.on("connection", (socket) => {
+  console.log(socket.id);
+
+  socket.on("create-new-meeting", ({ userId, userName }) => {
+    // console.log(userId, userName);
+    const meetingId = uuid();
+    const newRoom = {
+      id: meetingId,
+      connectedUsers: [
+        {
+          userId,
+          userName,
+          socketId: socket.id,
+        },
+      ],
+    };
+    allRooms.push(newRoom);
+
+    socket.join(meetingId);
+
+    socket.emit("new-meeting-created", { meeting: newRoom });
+  });
+
+  socket.on("join-meeting", ({ userInfo, meetingId, onlyAudio }) => {
+    // console.log(userInfo, meetingId, onlyAudio);
+    let meeting = allRooms.find((room) => room.id === meetingId);
+
+    if (!meeting) {
+      socket.emit("invalid-meeting-id", {
+        message: "Invalid meeting id. Unable to join meeting.",
+      });
+      return;
+    }
+
+    meeting.connectedUsers = [
+      ...meeting.connectedUsers,
+      {
+        userId: userInfo.userId,
+        userName: userInfo.userName,
+        socketId: socket.id,
+      },
+    ];
+    socket.join(meeting.id);
+    socket.emit("meeting-joined", { meeting });
+    socket.in(meeting.id).emit("room-update", { meeting });
+  });
+
+  socket.on("leave-meeting", ({ userInfo, meetingId }) => {
+    console.log(userInfo, meetingId);
+    leaveMeetingHandler(socket);
+  });
+
+  socket.on("disconnect", () => {
+    leaveMeetingHandler(socket);
+  });
+});
+
+function leaveMeetingHandler(socket) {
+  const meeting = allRooms.find((room) => {
+    const user = room.connectedUsers.find(
+      (user) => user.socketId === socket.id
+    );
+    return user ? true : false;
+  });
+
+  if (meeting) {
+    socket.leave(meeting.id);
+    meeting.connectedUsers = meeting.connectedUsers.filter(
+      (user) => user.socketId !== socket.id
+    );
+    if (meeting.connectedUsers.length === 0) {
+      allRooms = allRooms.filter((room) => room.id !== meeting.id);
+      console.log(allRooms);
+      return;
+    }
+    socket.in(meeting.id).emit("room-update", { meeting });
+    console.log("a user left the meeting : ", meeting.id);
+  }
+}
 
 //delete room routes and controllers as well as this comment

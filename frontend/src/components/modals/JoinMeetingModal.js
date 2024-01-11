@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import {
   Button,
   Checkbox,
+  FormControl,
   FormLabel,
   Input,
   Modal,
@@ -18,17 +19,20 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { actions } from "../../store/slice";
+import { getLocalPreviewAndInitRoomConnection } from "../../utils/webRTC-Logic";
 
 const JoinMeetingModal = ({ children }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const isRoomHost = useSelector((state) => state.app.isRoomHost);
+  const { userId, isRoomHost, connectOnlyWithAudio, meetingId } = useSelector(
+    (state) => state.app
+  );
 
   const [meetingDetails, setMeetingDetails] = useState({
     name: "",
-    ...(!isRoomHost && { meetingId: "" }),
+    meetingId: "",
     joining: false,
   });
 
@@ -39,62 +43,85 @@ const JoinMeetingModal = ({ children }) => {
   };
 
   const closeModalHandler = () => {
-    setMeetingDetails({ name: "", ...(!isRoomHost && { meetingId: "" }) });
+    setMeetingDetails({ name: "", meetingId: "" });
     onClose();
   };
 
-  const joinMeetingHandler = async () => {
-    setMeetingDetails((prev) => {
-      return {
-        ...prev,
-        joining: true,
-      };
-    });
+  const joinMeetingHandler = async (e) => {
+    e.preventDefault();
 
-    if (!isRoomHost) {
-      await axios
-        .get(`/api/room/${meetingDetails.meetingId}`)
-        .then((res) => {
-          // console.log(res.data);
-          if (res.data.roomExists) {
-            if (res.data.roomIsFull) {
-              toast({
-                title: "Meeting is full!",
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-                position: "top",
-              });
-            } else {
-              dispatch(actions.setIdentity({ identity: meetingDetails.name }));
-              dispatch(
-                actions.setMeetingId({ meetingId: meetingDetails.meetingId })
-              );
-              navigate(`/${meetingDetails.meetingId}`);
-            }
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-          toast({
-            title: err.response.data.message,
-            status: "error",
-            duration: 3000,
-            isClosable: true,
-            position: "top",
-          });
-        });
-    } else {
-      // send new meeting req to backend and from the backend itself redirect the user to /meeting/:meetingId page
+    if (meetingDetails.name.trim() === "") {
+      return;
+    } else if (!isRoomHost && meetingDetails.meetingId.trim() === "") {
+      return;
     }
 
-    setMeetingDetails((prev) => {
-      return {
-        ...prev,
-        joining: false,
-      };
-    });
+    const joinMeeting = async () => {
+      dispatch(actions.setUserName({ name: meetingDetails.name }));
+      await getLocalPreviewAndInitRoomConnection(
+        userId,
+        meetingDetails.name,
+        connectOnlyWithAudio,
+        isRoomHost,
+        meetingDetails.meetingId
+      );
+    };
+
+    await joinMeeting();
+
+    // if (!isRoomHost) {
+    //   setMeetingDetails((prev) => {
+    //     return {
+    //       ...prev,
+    //       joining: true,
+    //     };
+    //   });
+
+    //   await axios
+    //     .get(`/api/room/${meetingDetails.meetingId}`)
+    //     .then(async (res) => {
+    //       // console.log(res.data);
+    //       if (res.data.roomExists) {
+    //         if (res.data.roomIsFull) {
+    //           toast({
+    //             title: "Meeting is full!",
+    //             status: "error",
+    //             duration: 3000,
+    //             isClosable: true,
+    //             position: "top",
+    //           });
+    //         } else {
+    //           await joinMeeting();
+    //         }
+    //       }
+    //     })
+    //     .catch((err) => {
+    //       console.log(err);
+    //       toast({
+    //         title: err.response.data.message,
+    //         status: "error",
+    //         duration: 3000,
+    //         isClosable: true,
+    //         position: "top",
+    //       });
+    //     });
+
+    //   setMeetingDetails((prev) => {
+    //     return {
+    //       ...prev,
+    //       joining: false,
+    //     };
+    //   });
+    // } else {
+    //   await joinMeeting();
+    // }
   };
+
+  useEffect(() => {
+    if (meetingId) {
+      navigate(`/meeting/${meetingId}`);
+    }
+  }, [meetingId]);
 
   return (
     <>
@@ -106,60 +133,67 @@ const JoinMeetingModal = ({ children }) => {
             {isRoomHost ? "Host" : "Join"} meeting
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
-            {!isRoomHost && (
-              <>
-                <FormLabel>Meeting id :</FormLabel>
+          <form>
+            <ModalBody>
+              {!isRoomHost && (
+                <FormControl isRequired>
+                  <FormLabel>Meeting id :</FormLabel>
+                  <Input
+                    mb={4}
+                    name="meetingId"
+                    placeholder="Enter meeting id"
+                    value={meetingDetails.meetingId}
+                    onChange={inputChangeHandler}
+                    errorBorderColor="red.300"
+                  />
+                </FormControl>
+              )}
+              <FormControl isRequired>
+                <FormLabel>Name :</FormLabel>
                 <Input
-                  mb={4}
-                  name="meetingId"
-                  placeholder="Enter meeting id"
-                  value={meetingDetails.meetingId}
+                  name="name"
+                  placeholder="Enter your name"
+                  value={meetingDetails.name}
                   onChange={inputChangeHandler}
+                  errorBorderColor="red.300"
                 />
-              </>
-            )}
-            <FormLabel>Name :</FormLabel>
-            <Input
-              name="name"
-              placeholder="Enter your name"
-              value={meetingDetails.name}
-              onChange={inputChangeHandler}
-            />
-            <Checkbox
-              mt={4}
-              colorScheme="blue"
-              onChange={(e) => {
-                dispatch(
-                  actions.setOnlyWithAudio({
-                    connectOnlyWithAudio: e.target.checked,
-                  })
-                );
-              }}
-            >
-              Only audio
-            </Checkbox>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              colorScheme="blue"
-              mr={3}
-              onClick={joinMeetingHandler}
-              isLoading={meetingDetails.joining}
-              loadingText="Joining..."
-            >
-              Join
-            </Button>
-            <Button
-              colorScheme="blue"
-              variant={"ghost"}
-              onClick={closeModalHandler}
-              isLoading={meetingDetails.joining}
-              loadingText=""
-            >
-              Cancel
-            </Button>
-          </ModalFooter>
+              </FormControl>
+              <Checkbox
+                mt={4}
+                colorScheme="blue"
+                onChange={(e) => {
+                  dispatch(
+                    actions.setOnlyWithAudio({
+                      connectOnlyWithAudio: e.target.checked,
+                    })
+                  );
+                }}
+              >
+                Only audio
+              </Checkbox>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                mr={3}
+                type="submit"
+                colorScheme="blue"
+                onClick={joinMeetingHandler}
+                isLoading={meetingDetails.joining}
+                loadingText="Joining..."
+              >
+                Join
+              </Button>
+              <Button
+                colorScheme="blue"
+                variant={"ghost"}
+                onClick={closeModalHandler}
+                isLoading={meetingDetails.joining}
+                loadingText=""
+              >
+                Cancel
+              </Button>
+            </ModalFooter>
+          </form>
         </ModalContent>
       </Modal>
     </>

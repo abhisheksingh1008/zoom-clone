@@ -6,9 +6,14 @@ import {
   MenuList,
   MenuItem,
 } from "@chakra-ui/react";
+import { useSelector } from "react-redux";
 import { HiChevronDown } from "react-icons/hi";
 
 const Participants = () => {
+  const meetingParticipants = useSelector(
+    (state) => state.app.meetingParticipants
+  );
+
   return (
     <Box ml={3.5}>
       <Menu>
@@ -22,9 +27,9 @@ const Participants = () => {
           Participants
         </MenuButton>
         <MenuList>
-          <MenuItem>User 1</MenuItem>
-          <MenuItem>User 2</MenuItem>
-          <MenuItem>User 3</MenuItem>
+          {meetingParticipants.map((user) => (
+            <MenuItem key={user.userId}>{user.userName}</MenuItem>
+          ))}
         </MenuList>
       </Menu>
     </Box>

@@ -1,15 +1,18 @@
 import { Box } from "@chakra-ui/react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { MdCallEnd } from "react-icons/md";
 import { actions } from "../store/slice";
+import { leaveMeetingHandler } from "../utils/socketLogic";
 
 const LeaveCallButton = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { userId, userName, meetingId } = useSelector((state) => state.app);
 
   const leaveCallHandler = () => {
-    dispatch(actions.setIdentity({ identity: "" }));
+    leaveMeetingHandler({ userId, userName }, meetingId);
+    dispatch(actions.setUserName({ name: "" }));
     dispatch(actions.setMeetingId({ meetingId: null }));
     dispatch(actions.setOnlyWithAudio({ connectOnlyWithAudio: false }));
     navigate("/");

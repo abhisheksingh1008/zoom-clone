@@ -20,7 +20,7 @@ const MeetingOptions = () => {
       justifyContent="space-between"
     >
       <Text fontSize="1.5rem" fontWeight="bolder" color="white">
-        Meeting ID : {meetingId}
+        ID : {meetingId}
       </Text>
       <Box display="flex" alignItems="center">
         <CameraButton />
