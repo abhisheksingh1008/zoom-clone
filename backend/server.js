@@ -118,6 +118,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("init-webrtc-connection", ({ connectToUser }) => {
+    console.log(connectToUser);
     socket
       .to(connectToUser)
       .emit("init-webrtc-connection", { connectToUser: socket.id });

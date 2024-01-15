@@ -16,6 +16,8 @@ const LeaveCallButton = () => {
     dispatch(actions.setUserName({ name: "" }));
     dispatch(actions.setMeetingId({ meetingId: null }));
     dispatch(actions.setOnlyWithAudio({ connectOnlyWithAudio: false }));
+    dispatch(actions.setWebrtcMessages({ messages: [] }));
+    dispatch(actions.setSockeIoMessages({ messages: [] }));
     closeMediaDevices();
     navigate("/");
   };

@@ -9,6 +9,8 @@ const initialState = {
   errorMessage: "",
   meetingParticipants: [],
   connectOnlyWithAudio: false,
+  webrtcMessages: [],
+  socketIoMessages: [],
 };
 
 const slice = createSlice({
@@ -38,6 +40,22 @@ const slice = createSlice({
     setErrorMessage(state, action) {
       state.errorMessage = action.payload.message;
       // console.log(action.payload.message);
+    },
+    setWebrtcMessages(state, action) {
+      state.webrtcMessages = action.payload.messages;
+      // console.log(action.payload.messages);
+    },
+    setSockeIoMessages(state, action) {
+      state.socketIoMessages = action.payload.messages;
+      // console.log(action.payload.messages);
+    },
+    appendWebrtcMessages(state, action) {
+      state.webrtcMessages.push(action.payload.messageData);
+      // console.log(action.payload.messageData);
+    },
+    appendSockeIoMessages(state, action) {
+      state.socketIoMessages.push(action.payload.messageData);
+      // console.log(action.payload.messageData);
     },
   },
 });

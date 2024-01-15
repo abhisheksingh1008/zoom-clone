@@ -1,4 +1,6 @@
 import { Box, Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
+import SocketIoChat from "./chatFeatures/SocketIoChat";
+import WebrtcChat from "./chatFeatures/WebrtcChat";
 
 const ChatSection = () => {
   return (
@@ -8,7 +10,7 @@ const ChatSection = () => {
       textAlign="center"
       border="2px"
     >
-      <Tabs isFitted>
+      <Tabs isFitted h={"100%"}>
         <TabList>
           <Tab fontWeight="bold" fontSize="1.2rem">
             WebRTC chat
@@ -17,12 +19,12 @@ const ChatSection = () => {
             Socket.io chat
           </Tab>
         </TabList>
-        <TabPanels>
-          <TabPanel>
-            <p>WebRTC messages here</p>
+        <TabPanels h={"93%"}>
+          <TabPanel px={0} h={"100%"}>
+            <WebrtcChat />
           </TabPanel>
           <TabPanel>
-            <p>Socket.io messages here</p>
+            <SocketIoChat />
           </TabPanel>
         </TabPanels>
       </Tabs>

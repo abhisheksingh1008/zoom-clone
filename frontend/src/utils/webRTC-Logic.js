@@ -1,9 +1,12 @@
 import Peer from "simple-peer";
+import store from "../store/index";
+import { actions } from "../store/slice";
 import * as socket from "./socketLogic";
 
-let localStream = null,
-  allStreams = [],
-  peers = {};
+let localStream = null;
+
+const peers = {},
+  dataChannel = "messageChannel";
 
 const getConfiguration = () => {
   return {
@@ -46,12 +49,12 @@ export const getLocalPreviewAndInitRoomConnection = async (
 };
 
 export const prepareNewPeerConnection = (newUserSocketId, isInitiator) => {
-  const config = getConfiguration();
+  // const configuration = getConfiguration();
 
   peers[newUserSocketId] = new Peer({
     initiator: isInitiator,
-    config: config,
     stream: localStream,
+    channelName: dataChannel,
   });
 
   peers[newUserSocketId].on("signal", (signalData) => {
@@ -67,7 +70,12 @@ export const prepareNewPeerConnection = (newUserSocketId, isInitiator) => {
   peers[newUserSocketId].on("stream", (stream) => {
     // console.log("New stream received from user : ", peers[newUserSocketId]);
     addNewStream(stream, newUserSocketId);
-    allStreams.push(stream);
+  });
+
+  peers[newUserSocketId].on("data", (messageData) => {
+    const newMessage = JSON.parse(messageData);
+    // console.log(newMessage);
+    appendNewMessage(newMessage);
   });
 };
 
@@ -210,5 +218,27 @@ const switchVideoTracks = (stream) => {
         }
       }
     }
+  }
+};
+
+const appendNewMessage = (messageData) => {
+  store.dispatch(actions.appendWebrtcMessages({ messageData }));
+};
+
+export const sendMessageWithWebRTC = (message) => {
+  const userId = store.getState().app.userId;
+  const userName = store.getState().app.userName;
+
+  const messageData = {
+    userId,
+    userName,
+    messageContent: message,
+  };
+
+  appendNewMessage(messageData);
+
+  const stringifiedMessageData = JSON.stringify(messageData);
+  for (let peer in peers) {
+    peers[peer].send(stringifiedMessageData);
   }
 };
