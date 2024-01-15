@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BsCameraVideo, BsCameraVideoOff } from "react-icons/bs";
+import { toggleCamera } from "../utils/webRTC-Logic";
 
 const CameraButton = () => {
-  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+
+  useEffect(() => {
+    toggleCamera(cameraEnabled);
+  }, [cameraEnabled]);
 
   return (
     <span onClick={() => setCameraEnabled((prev) => !prev)}>
@@ -10,13 +15,13 @@ const CameraButton = () => {
         <BsCameraVideo
           size={"1.8rem"}
           color="white"
-          style={{ marginInline: "0.75rem", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
         />
       ) : (
         <BsCameraVideoOff
           size={"1.8rem"}
           color="white"
-          style={{ marginInline: "0.75rem", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
         />
       )}
       {/* <Tooltip

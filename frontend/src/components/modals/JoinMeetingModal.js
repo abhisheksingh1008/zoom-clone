@@ -51,8 +51,20 @@ const JoinMeetingModal = ({ children }) => {
     e.preventDefault();
 
     if (meetingDetails.name.trim() === "") {
+      toast({
+        title: "Name is required",
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
       return;
     } else if (!isRoomHost && meetingDetails.meetingId.trim() === "") {
+      toast({
+        title: "Meeting id is required",
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
       return;
     }
 
@@ -133,7 +145,7 @@ const JoinMeetingModal = ({ children }) => {
             {isRoomHost ? "Host" : "Join"} meeting
           </ModalHeader>
           <ModalCloseButton />
-          <form>
+          <form onSubmit={joinMeetingHandler}>
             <ModalBody>
               {!isRoomHost && (
                 <FormControl isRequired>
@@ -177,15 +189,15 @@ const JoinMeetingModal = ({ children }) => {
                 mr={3}
                 type="submit"
                 colorScheme="blue"
-                onClick={joinMeetingHandler}
                 isLoading={meetingDetails.joining}
                 loadingText="Joining..."
               >
                 Join
               </Button>
               <Button
-                colorScheme="blue"
+                type="button"
                 variant={"ghost"}
+                colorScheme="blue"
                 onClick={closeModalHandler}
                 isLoading={meetingDetails.joining}
                 loadingText=""

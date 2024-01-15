@@ -1,6 +1,19 @@
+import Peer from "simple-peer";
 import * as socket from "./socketLogic";
 
-let localStream;
+let localStream = null,
+  allStreams = [],
+  peers = {};
+
+const getConfiguration = () => {
+  return {
+    iceServers: [
+      {
+        urls: "stun:stun.l.google.com:19302",
+      },
+    ],
+  };
+};
 
 export const getLocalPreviewAndInitRoomConnection = async (
   userId,
@@ -9,13 +22,16 @@ export const getLocalPreviewAndInitRoomConnection = async (
   isRoomHost,
   meetingId = null
 ) => {
-  const config = { audio: true, camera: audioOnly ? false : true };
-  console.log(config);
-
   await navigator.mediaDevices
     .getUserMedia({
       audio: true,
-      camera: audioOnly ? false : true,
+      video: audioOnly
+        ? false
+        : {
+            width: 1280,
+            height: 720,
+            facingMode: "user",
+          },
     })
     .then((stream) => {
       localStream = stream;
@@ -27,4 +43,172 @@ export const getLocalPreviewAndInitRoomConnection = async (
     .catch((err) => {
       console.log(err);
     });
+};
+
+export const prepareNewPeerConnection = (newUserSocketId, isInitiator) => {
+  const config = getConfiguration();
+
+  peers[newUserSocketId] = new Peer({
+    initiator: isInitiator,
+    config: config,
+    stream: localStream,
+  });
+
+  peers[newUserSocketId].on("signal", (signalData) => {
+    /* signal data consists all the information about webRTC connection, ICE candidated info and SDP information, 
+    etc and once we receive it, we want to send it to the other user so the webRTC connection could be established */
+
+    socket.signalPeerDataForConnection({
+      signal: signalData,
+      signalToUser: newUserSocketId,
+    });
+  });
+
+  peers[newUserSocketId].on("stream", (stream) => {
+    // console.log("New stream received from user : ", peers[newUserSocketId]);
+    addNewStream(stream, newUserSocketId);
+    allStreams.push(stream);
+  });
+};
+
+export const handleSignaling = (signalData) => {
+  const { signal, signalFromUser } = signalData;
+
+  peers[signalFromUser].signal(signal);
+};
+
+export const removePeerConnection = (disconnectedUser) => {
+  try {
+    const videoContainer = document.getElementById(
+      `${disconnectedUser}-video-container`
+    );
+    const videoElement = document.getElementById(`${disconnectedUser}-video`);
+
+    if (videoContainer && videoElement) {
+      videoElement.srcObject.getTracks().forEach((track) => track.stop());
+
+      videoElement.srcObject = null;
+      videoContainer.removeChild(videoElement);
+      videoContainer.parentNode.removeChild(videoContainer);
+
+      if (peers[disconnectedUser]) {
+        peers[disconnectedUser].destroy();
+      }
+      delete peers[disconnectedUser];
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const showLocalVideoPreview = () => {
+  if (!localStream) {
+    console.error("Failed to access camera and mic");
+    return;
+  }
+
+  const allVideosContainer = document.getElementById("videos_container");
+  // console.log(allVideosContainer);
+
+  const videoContainer = document.createElement("div");
+  videoContainer.setAttribute("id", "local_preview_container");
+  videoContainer.classList.add("video_element_container");
+
+  const videoElement = document.createElement("video");
+  videoElement.setAttribute("id", "local_preview_video_element");
+  videoElement.classList.add("video_element");
+  videoElement.srcObject = localStream;
+  videoElement.autoplay = true;
+  videoElement.muted = true;
+
+  videoElement.onloadedmetadata = () => {
+    videoElement.play();
+  };
+
+  videoContainer.appendChild(videoElement);
+  allVideosContainer.appendChild(videoContainer);
+};
+
+const addNewStream = (stream, streamReceivedFromUser) => {
+  const allVideosContainer = document.getElementById("videos_container");
+  const videoContainer = document.createElement("div");
+  videoContainer.setAttribute(
+    "id",
+    `${streamReceivedFromUser}-video-container`
+  );
+  videoContainer.classList.add("video_element_container");
+  const videoElement = document.createElement("video");
+  videoElement.setAttribute("id", `${streamReceivedFromUser}-video`);
+  videoElement.classList.add("video_element");
+  videoElement.srcObject = stream;
+  videoElement.autoplay = true;
+
+  videoContainer.addEventListener("click", () => {
+    videoContainer.classList.toggle("full_screen");
+  });
+
+  videoElement.onloadedmetadata = () => {
+    videoElement.play();
+  };
+
+  videoContainer.appendChild(videoElement);
+  allVideosContainer.appendChild(videoContainer);
+};
+
+export const closeMediaDevices = () => {
+  if (localStream) {
+    localStream.getTracks().forEach((track) => track.stop());
+  }
+};
+
+export const toggleMic = (isMuted) => {
+  localStream.getAudioTracks()[0].enabled = isMuted ? true : false;
+};
+
+export const toggleCamera = (isDisabled) => {
+  localStream.getVideoTracks()[0].enabled = isDisabled ? true : false;
+};
+
+export const toggleScreenShare = (
+  isScreenSharingActive,
+  screenSharingStream = null
+) => {
+  if (isScreenSharingActive) {
+    switchVideoTracks(screenSharingStream);
+    changeLocalPreview(screenSharingStream);
+  } else {
+    switchVideoTracks(localStream);
+    changeLocalPreview(localStream);
+  }
+};
+
+const changeLocalPreview = (stream) => {
+  const localPreviewElement = document.getElementById(
+    "local_preview_video_element"
+  );
+  localPreviewElement.srcObject = stream;
+  localPreviewElement.autoplay = true;
+  localPreviewElement.muted = true;
+
+  localPreviewElement.onloadedmetadata = () => localPreviewElement.play();
+};
+
+const switchVideoTracks = (stream) => {
+  for (let socket_id in peers) {
+    for (let index in peers[socket_id].streams[0].getTracks()) {
+      for (let index2 in stream.getTracks()) {
+        if (
+          peers[socket_id].streams[0].getTracks()[index].kind ===
+          stream.getTracks()[index2].kind
+        ) {
+          peers[socket_id].replaceTrack(
+            peers[socket_id].streams[0].getTracks()[index],
+            stream.getTracks()[index2],
+            peers[socket_id].streams[0]
+          );
+          break;
+        }
+      }
+    }
+  }
 };

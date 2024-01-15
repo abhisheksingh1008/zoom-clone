@@ -55,7 +55,7 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  console.log(socket.id);
+  console.log("New user joined : ", socket.id);
 
   socket.on("create-new-meeting", ({ userId, userName }) => {
     // console.log(userId, userName);
@@ -96,14 +96,31 @@ io.on("connection", (socket) => {
         socketId: socket.id,
       },
     ];
+    socket.in(meeting.id).emit("prepare-webrtc-conn", {
+      newUserSocketId: socket.id,
+      isInitiator: false,
+    });
     socket.join(meeting.id);
     socket.emit("meeting-joined", { meeting });
     socket.in(meeting.id).emit("room-update", { meeting });
   });
 
   socket.on("leave-meeting", ({ userInfo, meetingId }) => {
-    console.log(userInfo, meetingId);
+    // console.log(userInfo, meetingId);
     leaveMeetingHandler(socket);
+  });
+
+  socket.on("connection-signal", (signalData) => {
+    const { signal, signalToUser } = signalData;
+    socket
+      .to(signalToUser)
+      .emit("connection-signal", { signal, signalFromUser: socket.id });
+  });
+
+  socket.on("init-webrtc-connection", ({ connectToUser }) => {
+    socket
+      .to(connectToUser)
+      .emit("init-webrtc-connection", { connectToUser: socket.id });
   });
 
   socket.on("disconnect", () => {
@@ -126,11 +143,14 @@ function leaveMeetingHandler(socket) {
     );
     if (meeting.connectedUsers.length === 0) {
       allRooms = allRooms.filter((room) => room.id !== meeting.id);
-      console.log(allRooms);
       return;
+    } else if (meeting.connectedUsers.length > 0) {
+      socket.in(meeting.id).emit("room-update", { meeting });
+      socket
+        .in(meeting.id)
+        .emit("user-disconnected", { disconnectedUser: socket.id });
     }
-    socket.in(meeting.id).emit("room-update", { meeting });
-    console.log("a user left the meeting : ", meeting.id);
+    console.log(`User ${socket.id} left the meeting : ${meeting.id}`);
   }
 }
 

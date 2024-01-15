@@ -7,6 +7,7 @@ import {
   MenuItem,
 } from "@chakra-ui/react";
 import { useSelector } from "react-redux";
+import { CgProfile } from "react-icons/cg";
 import { HiChevronDown } from "react-icons/hi";
 
 const Participants = () => {
@@ -15,16 +16,17 @@ const Participants = () => {
   );
 
   return (
-    <Box ml={3.5}>
+    <Box>
       <Menu>
         <MenuButton
+          p={1}
           as={Button}
           variant={"outline"}
           colorScheme="transparent"
           color="white"
           rightIcon={<HiChevronDown />}
         >
-          Participants
+          <CgProfile size={"1.75rem"} />
         </MenuButton>
         <MenuList>
           {meetingParticipants.map((user) => (

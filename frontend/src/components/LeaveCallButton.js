@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { MdCallEnd } from "react-icons/md";
 import { actions } from "../store/slice";
 import { leaveMeetingHandler } from "../utils/socketLogic";
+import { closeMediaDevices } from "../utils/webRTC-Logic";
 
 const LeaveCallButton = () => {
   const navigate = useNavigate();
@@ -15,14 +16,14 @@ const LeaveCallButton = () => {
     dispatch(actions.setUserName({ name: "" }));
     dispatch(actions.setMeetingId({ meetingId: null }));
     dispatch(actions.setOnlyWithAudio({ connectOnlyWithAudio: false }));
+    closeMediaDevices();
     navigate("/");
   };
 
   return (
     <Box
       py={1.5}
-      px={3}
-      ml={1}
+      px={2}
       bg="red"
       color="white"
       fontSize="1.1rem"

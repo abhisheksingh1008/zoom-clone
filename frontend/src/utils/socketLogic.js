@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 import store from "../store/index";
 import { actions } from "../store/slice";
+import * as webRTC from "./webRTC-Logic";
 
 let socket = null;
 
@@ -10,11 +11,11 @@ export const connectWithSocketIoServer = () => {
   });
 
   socket.on("connect", () => {
-    console.log("Connected to socket.io server : ", socket.id);
+    // console.log("Connected to socket.io server : ", socket.id);
   });
 
   socket.on("new-meeting-created", ({ meeting }) => {
-    console.log(meeting);
+    // console.log(meeting);
     store.dispatch(actions.setMeetingId({ meetingId: meeting.id }));
     store.dispatch(
       actions.setMeetingParticipants({ connectedUsers: meeting.connectedUsers })
@@ -22,7 +23,7 @@ export const connectWithSocketIoServer = () => {
   });
 
   socket.on("meeting-joined", ({ meeting }) => {
-    console.log(meeting);
+    // console.log(meeting);
     store.dispatch(actions.setMeetingId({ meetingId: meeting.id }));
     store.dispatch(
       actions.setMeetingParticipants({ connectedUsers: meeting.connectedUsers })
@@ -30,16 +31,34 @@ export const connectWithSocketIoServer = () => {
   });
 
   socket.on("room-update", ({ meeting }) => {
-    // if (store.app.meetingId === meeting.meetingId) {}
-    console.log(meeting);
+    // console.log(meeting);
     store.dispatch(
       actions.setMeetingParticipants({ connectedUsers: meeting.connectedUsers })
     );
   });
 
+  socket.on("user-disconnected", ({ disconnectedUser }) => {
+    // console.log(disconnectedUser);
+    webRTC.removePeerConnection(disconnectedUser);
+  });
+
   socket.on("invalid-meeting-id", ({ message }) => {
     console.log(message);
     store.dispatch(actions.setErrorMessage({ message }));
+  });
+
+  socket.on("prepare-webrtc-conn", ({ newUserSocketId, isInitiator }) => {
+    webRTC.prepareNewPeerConnection(newUserSocketId, isInitiator);
+    // inform the new joined user we have successfully prepared for the webrtc coneection and now we are ready to initialize it
+    socket.emit("init-webrtc-connection", { connectToUser: newUserSocketId });
+  });
+
+  socket.on("connection-signal", (signalData) => {
+    webRTC.handleSignaling(signalData);
+  });
+
+  socket.on("init-webrtc-connection", ({ connectToUser }) => {
+    webRTC.prepareNewPeerConnection(connectToUser, true);
   });
 };
 
@@ -59,4 +78,6 @@ export const leaveMeetingHandler = (userInfo, meetingId) => {
   socket.emit("leave-meeting", { userInfo, meetingId });
 };
 
-export const leaveMeeting = () => {};
+export const signalPeerDataForConnection = (signalData) => {
+  socket.emit("connection-signal", signalData);
+};

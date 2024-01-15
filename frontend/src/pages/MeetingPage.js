@@ -1,13 +1,11 @@
-import { useSelector } from "react-redux";
 import { Box } from "@chakra-ui/react";
 import MeetingSection from "../components/MeetingSection";
 import ChatSection from "../components/ChatSection";
 
 const MeetingPage = () => {
-  const meetingId = useSelector((state) => state.app.meetingId);
-
   return (
     <Box
+      w={"100vw"}
       display="flex"
       flexDirection={{ base: "column", md: "row", lg: "row" }}
     >

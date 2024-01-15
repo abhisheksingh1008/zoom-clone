@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AiOutlineAudio, AiOutlineAudioMuted } from "react-icons/ai";
+import { toggleMic } from "../utils/webRTC-Logic";
 
 const MicButton = () => {
-  const [micEnabled, setMicEnabled] = useState(false);
+  const [micEnabled, setMicEnabled] = useState(true);
+
+  useEffect(() => {
+    toggleMic(micEnabled);
+  }, [micEnabled]);
 
   return (
     <span onClick={() => setMicEnabled((prev) => !prev)}>
@@ -10,13 +15,13 @@ const MicButton = () => {
         <AiOutlineAudio
           size={"1.5rem"}
           color="white"
-          style={{ marginInline: "0.75rem", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
         />
       ) : (
         <AiOutlineAudioMuted
           size={"1.5rem"}
           color="white"
-          style={{ marginInline: "0.75rem", cursor: "pointer" }}
+          style={{ cursor: "pointer" }}
         />
       )}
       {/* <Tooltip
