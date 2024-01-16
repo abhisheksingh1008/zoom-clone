@@ -9,11 +9,18 @@ const MessageItem = ({ messageData, isSelfMessage, isFirstMessage }) => {
     >
       <Box>
         {isFirstMessage && (
-          <Text>{isSelfMessage ? "You" : messageData.userName}</Text>
+          <Text
+            mt={1.5}
+            fontWeight="bold"
+            textAlign={isSelfMessage ? "end" : "start"}
+          >
+            {isSelfMessage ? "You" : messageData.userName}
+          </Text>
         )}
         <Text
           px={2.5}
           py={1.5}
+          w="fit-content"
           borderRadius="md"
           color={isSelfMessage ? "white" : "black"}
           bg={isSelfMessage ? "#0078FF" : "gray.200"}

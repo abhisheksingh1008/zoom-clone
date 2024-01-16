@@ -1,13 +1,18 @@
+import { useSelector } from "react-redux";
 import { Box, Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
-import SocketIoChat from "./chatFeatures/SocketIoChat";
-import WebrtcChat from "./chatFeatures/WebrtcChat";
+import Chat from "./chatFeatures/Chat";
+import { sendMessageWithWebRTC } from "../utils/webRTC-Logic";
+import { sendMessageWithSocketIo } from "../utils/socketLogic";
 
 const ChatSection = () => {
+  const { socketIoMessages, webrtcMessages } = useSelector(
+    (state) => state.app
+  );
+
   return (
     <Box
       h={"100dvh"}
       w={{ base: "100vw", md: "36vw", lg: "32vw" }}
-      textAlign="center"
       border="2px"
     >
       <Tabs isFitted h={"100%"}>
@@ -21,10 +26,13 @@ const ChatSection = () => {
         </TabList>
         <TabPanels h={"93%"}>
           <TabPanel px={0} h={"100%"}>
-            <WebrtcChat />
+            <Chat messages={webrtcMessages} onSend={sendMessageWithWebRTC} />
           </TabPanel>
-          <TabPanel>
-            <SocketIoChat />
+          <TabPanel px={0} h={"100%"}>
+            <Chat
+              messages={socketIoMessages}
+              onSend={sendMessageWithSocketIo}
+            />
           </TabPanel>
         </TabPanels>
       </Tabs>

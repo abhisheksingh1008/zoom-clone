@@ -1,3 +1,4 @@
+import "../setup.ts";
 import Peer from "simple-peer";
 import store from "../store/index";
 import { actions } from "../store/slice";

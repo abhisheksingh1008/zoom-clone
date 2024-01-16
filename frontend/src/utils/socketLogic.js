@@ -60,6 +60,10 @@ export const connectWithSocketIoServer = () => {
   socket.on("init-webrtc-connection", ({ connectToUser }) => {
     webRTC.prepareNewPeerConnection(connectToUser, true);
   });
+
+  socket.on("new-message", ({ messageData }) => {
+    appendNewMessage(messageData);
+  });
 };
 
 export const createNewMeeting = (userId, hostUserName) => {
@@ -80,4 +84,23 @@ export const leaveMeetingHandler = (userInfo, meetingId) => {
 
 export const signalPeerDataForConnection = (signalData) => {
   socket.emit("connection-signal", signalData);
+};
+
+const appendNewMessage = (messageData) => {
+  store.dispatch(actions.appendSockeIoMessages({ messageData }));
+};
+
+export const sendMessageWithSocketIo = (message) => {
+  const { userId, userName, meetingId } = store.getState().app;
+
+  const messageData = {
+    userId,
+    userName,
+    meetingId,
+    messageContent: message,
+  };
+
+  appendNewMessage(messageData);
+
+  socket.emit("new-message", { messageData });
 };

@@ -1,13 +1,17 @@
-import { Box } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+import { Box } from "@chakra-ui/react";
 import MessageFeed from "./MessageFeed";
 import MessageInput from "./MessageInput";
-import { sendMessageWithWebRTC } from "../../utils/webRTC-Logic";
 
-const WebrtcChat = () => {
-  const { userId, webrtcMessages: messages } = useSelector(
-    (state) => state.app
-  );
+const Chat = ({ messages, onSend }) => {
+  const { userId } = useSelector((state) => state.app);
+
+  const messageEndRef = useRef(null);
+
+  useEffect(() => {
+    messageEndRef.current.scrollIntoView();
+  }, [messages]);
 
   return (
     <Box
@@ -28,11 +32,12 @@ const WebrtcChat = () => {
       >
         <Box overflowY={"scroll"}>
           <MessageFeed messages={messages} loggedInUser={userId} />
+          <div ref={messageEndRef}></div>
         </Box>
       </Box>
-      <MessageInput onSend={sendMessageWithWebRTC} />
+      <MessageInput onSend={onSend} />
     </Box>
   );
 };
 
-export default WebrtcChat;
+export default Chat;

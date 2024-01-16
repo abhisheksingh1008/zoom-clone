@@ -124,6 +124,10 @@ io.on("connection", (socket) => {
       .emit("init-webrtc-connection", { connectToUser: socket.id });
   });
 
+  socket.on("new-message", ({ messageData }) => {
+    socket.in(messageData.meetingId).emit("new-message", { messageData });
+  });
+
   socket.on("disconnect", () => {
     leaveMeetingHandler(socket);
   });
