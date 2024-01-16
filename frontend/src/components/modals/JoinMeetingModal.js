@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import axios from "axios";
 import {
   Button,
   Checkbox,
@@ -19,16 +18,18 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { actions } from "../../store/slice";
-import { getLocalPreviewAndInitRoomConnection } from "../../utils/webRTC-Logic";
+import {
+  closeMediaDevices,
+  getLocalPreviewAndInitRoomConnection,
+} from "../../utils/webRTC-Logic";
 
 const JoinMeetingModal = ({ children }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { userId, isRoomHost, connectOnlyWithAudio, meetingId } = useSelector(
-    (state) => state.app
-  );
+  const { userId, isRoomHost, connectOnlyWithAudio, meetingId, errorMessage } =
+    useSelector((state) => state.app);
 
   const [meetingDetails, setMeetingDetails] = useState({
     name: "",
@@ -135,6 +136,19 @@ const JoinMeetingModal = ({ children }) => {
     }
   }, [meetingId]);
 
+  useEffect(() => {
+    if (errorMessage) {
+      toast({
+        title: errorMessage,
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
+
+      closeMediaDevices();
+    }
+  }, [errorMessage]);
+
   return (
     <>
       <span onClick={onOpen}>{children}</span>
@@ -170,19 +184,6 @@ const JoinMeetingModal = ({ children }) => {
                   errorBorderColor="red.300"
                 />
               </FormControl>
-              <Checkbox
-                mt={4}
-                colorScheme="blue"
-                onChange={(e) => {
-                  dispatch(
-                    actions.setOnlyWithAudio({
-                      connectOnlyWithAudio: e.target.checked,
-                    })
-                  );
-                }}
-              >
-                Only audio
-              </Checkbox>
             </ModalBody>
             <ModalFooter>
               <Button

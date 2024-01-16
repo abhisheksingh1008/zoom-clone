@@ -47,18 +47,30 @@ export const connectWithSocketIoServer = () => {
     store.dispatch(actions.setErrorMessage({ message }));
   });
 
-  socket.on("prepare-webrtc-conn", ({ newUserSocketId, isInitiator }) => {
-    webRTC.prepareNewPeerConnection(newUserSocketId, isInitiator);
-    // inform the new joined user we have successfully prepared for the webrtc coneection and now we are ready to initialize it
-    socket.emit("init-webrtc-connection", { connectToUser: newUserSocketId });
+  socket.on("meeting-full", ({ message }) => {
+    console.log(message);
+    store.dispatch(actions.setErrorMessage({ message }));
   });
+
+  socket.on(
+    "prepare-webrtc-conn",
+    ({ newUserSocketId, isInitiator, userName }) => {
+      webRTC.prepareNewPeerConnection(newUserSocketId, isInitiator, userName);
+      // inform the new joined user we have successfully prepared for the webrtc coneection and now we are ready to initialize it
+      const localUserName = store.getState().app.userName;
+      socket.emit("init-webrtc-connection", {
+        connectToUser: newUserSocketId,
+        userName: localUserName,
+      });
+    }
+  );
 
   socket.on("connection-signal", (signalData) => {
     webRTC.handleSignaling(signalData);
   });
 
-  socket.on("init-webrtc-connection", ({ connectToUser }) => {
-    webRTC.prepareNewPeerConnection(connectToUser, true);
+  socket.on("init-webrtc-connection", ({ connectToUser, userName }) => {
+    webRTC.prepareNewPeerConnection(connectToUser, true, userName);
   });
 
   socket.on("new-message", ({ messageData }) => {

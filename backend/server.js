@@ -88,6 +88,13 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (meeting.connectedUsers.length >= 4) {
+      socket.emit("meeting-full", {
+        message: "The meeting is full. Please try after some time.",
+      });
+      return;
+    }
+
     meeting.connectedUsers = [
       ...meeting.connectedUsers,
       {
@@ -99,6 +106,7 @@ io.on("connection", (socket) => {
     socket.in(meeting.id).emit("prepare-webrtc-conn", {
       newUserSocketId: socket.id,
       isInitiator: false,
+      userName: userInfo.userName,
     });
     socket.join(meeting.id);
     socket.emit("meeting-joined", { meeting });
@@ -117,11 +125,11 @@ io.on("connection", (socket) => {
       .emit("connection-signal", { signal, signalFromUser: socket.id });
   });
 
-  socket.on("init-webrtc-connection", ({ connectToUser }) => {
-    console.log(connectToUser);
+  socket.on("init-webrtc-connection", ({ connectToUser, userName }) => {
+    // console.log(connectToUser);
     socket
       .to(connectToUser)
-      .emit("init-webrtc-connection", { connectToUser: socket.id });
+      .emit("init-webrtc-connection", { connectToUser: socket.id, userName });
   });
 
   socket.on("new-message", ({ messageData }) => {

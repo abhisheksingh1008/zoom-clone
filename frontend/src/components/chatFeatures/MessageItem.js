@@ -10,7 +10,7 @@ const MessageItem = ({ messageData, isSelfMessage, isFirstMessage }) => {
       <Box>
         {isFirstMessage && (
           <Text
-            mt={1.5}
+            mt={2}
             fontWeight="bold"
             textAlign={isSelfMessage ? "end" : "start"}
           >

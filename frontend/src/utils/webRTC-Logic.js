@@ -49,7 +49,11 @@ export const getLocalPreviewAndInitRoomConnection = async (
     });
 };
 
-export const prepareNewPeerConnection = (newUserSocketId, isInitiator) => {
+export const prepareNewPeerConnection = (
+  newUserSocketId,
+  isInitiator,
+  userName
+) => {
   // const configuration = getConfiguration();
 
   peers[newUserSocketId] = new Peer({
@@ -70,7 +74,7 @@ export const prepareNewPeerConnection = (newUserSocketId, isInitiator) => {
 
   peers[newUserSocketId].on("stream", (stream) => {
     // console.log("New stream received from user : ", peers[newUserSocketId]);
-    addNewStream(stream, newUserSocketId);
+    addNewStream(stream, newUserSocketId, userName);
   });
 
   peers[newUserSocketId].on("data", (messageData) => {
@@ -119,9 +123,16 @@ export const showLocalVideoPreview = () => {
   const allVideosContainer = document.getElementById("videos_container");
   // console.log(allVideosContainer);
 
+  const container = document.createElement("div");
+  container.classList.add("container");
+
   const videoContainer = document.createElement("div");
   videoContainer.setAttribute("id", "local_preview_container");
   videoContainer.classList.add("video_element_container");
+
+  const userLabel = document.createElement("span");
+  userLabel.classList.add("user-label");
+  userLabel.innerHTML = "You";
 
   const videoElement = document.createElement("video");
   videoElement.setAttribute("id", "local_preview_video_element");
@@ -134,18 +145,29 @@ export const showLocalVideoPreview = () => {
     videoElement.play();
   };
 
+  videoContainer.appendChild(userLabel);
   videoContainer.appendChild(videoElement);
-  allVideosContainer.appendChild(videoContainer);
+  container.appendChild(videoContainer);
+  allVideosContainer.appendChild(container);
 };
 
-const addNewStream = (stream, streamReceivedFromUser) => {
+const addNewStream = (stream, streamReceivedFromUser, userName) => {
   const allVideosContainer = document.getElementById("videos_container");
+
+  const container = document.createElement("div");
+  container.classList.add("container");
+
   const videoContainer = document.createElement("div");
   videoContainer.setAttribute(
     "id",
     `${streamReceivedFromUser}-video-container`
   );
   videoContainer.classList.add("video_element_container");
+
+  const userLabel = document.createElement("span");
+  userLabel.classList.add("user-label");
+  userLabel.innerHTML = userName;
+
   const videoElement = document.createElement("video");
   videoElement.setAttribute("id", `${streamReceivedFromUser}-video`);
   videoElement.classList.add("video_element");
@@ -160,8 +182,10 @@ const addNewStream = (stream, streamReceivedFromUser) => {
     videoElement.play();
   };
 
+  videoContainer.appendChild(userLabel);
   videoContainer.appendChild(videoElement);
-  allVideosContainer.appendChild(videoContainer);
+  container.appendChild(videoContainer);
+  allVideosContainer.appendChild(container);
 };
 
 export const closeMediaDevices = () => {
