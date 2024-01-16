@@ -9,6 +9,7 @@ const initialState = {
   errorMessage: "",
   meetingParticipants: [],
   connectOnlyWithAudio: false,
+  screenShareActive: false,
   webrtcMessages: [],
   socketIoMessages: [],
 };
@@ -32,6 +33,10 @@ const slice = createSlice({
     setOnlyWithAudio(state, action) {
       state.connectOnlyWithAudio = action.payload.connectOnlyWithAudio;
       // console.log(action.payload.connectOnlyWithAudio);
+    },
+    setScreenShareActive(state, action) {
+      state.screenShareActive = action.payload.screenShareActive;
+      // console.log(action.payload.screenShareActive);
     },
     setMeetingParticipants(state, action) {
       state.meetingParticipants = action.payload.connectedUsers;

@@ -29,7 +29,7 @@ code {
 
 .video_element {
   width: 100%;
-  object-fit: scale-down;
+  object-fit: cover;
 }
 
 .user-label {

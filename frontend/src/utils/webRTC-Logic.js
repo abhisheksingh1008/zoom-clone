@@ -9,7 +9,7 @@ let localStream = null;
 const peers = {},
   dataChannel = "messageChannel";
 
-const getConfiguration = () => {
+export const getConfiguration = () => {
   return {
     iceServers: [
       {

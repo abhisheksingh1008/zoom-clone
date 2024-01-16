@@ -3,11 +3,11 @@ import { Server } from "socket.io";
 import { config } from "dotenv";
 import { v4 as uuid } from "uuid";
 import cors from "cors";
+import path from "path";
 
 import HttpError from "./models/HttpError.js";
 import { errorHandler, notFound } from "./middlewares/errorMiddlewares.js";
 
-// { id: "abcd", users: ["abhi", "abhi", "abhi"] }
 let allRooms = [];
 
 config();
@@ -37,9 +37,18 @@ app.get("/api/room/:roomId", (req, res, next) => {
   }
 });
 
-app.use("/api", (req, res, next) => {
-  res.status(200).json({ message: "API is running." });
-});
+const __dirname = path.resolve();
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/frontend/build")));
+
+  app.get("*", (req, res, next) => {
+    res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"));
+  });
+} else {
+  app.get("/", (req, res, next) => {
+    res.send("API is running.");
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);
